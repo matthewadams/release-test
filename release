@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-#
-# This script implements the release workflow for helm charts.
+
+# This script implements the release branch workflow for helm charts.
 #
 # Requirements:
 # * git
@@ -168,7 +168,7 @@ if [ "$BRANCH" == "$MASTER" ]; then
       git commit -m "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]" > /dev/null 2>&1
       git push > /dev/null 2>&1
 
-      echo "tagged $NEW_RELEASE_BRANCH_VERSION for release"
+      echo "created release branch $NEW_RELEASE_BRANCH and tagged $NEW_RELEASE_BRANCH_VERSION for release"
       exit 0
       ;;
 
