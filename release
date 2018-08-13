@@ -1,0 +1,290 @@
+#!/usr/bin/env bash
+
+#
+# This script implements the release workflow for helm charts.
+#
+
+CHART=$2
+if [ -z "$2" ]; then
+  echo "ERROR: no chart name given"
+  usage
+  exit 1
+fi
+
+HELM_REPO=${HELM_REPO:-cm://h.cfcr.io/scispike/$CHART}
+
+usage() {
+    cat<<EOF
+
+usage:
+if on master branch  :  release pre|rc <chart>
+if on release branch :  release major|minor|patch|pre <chart>
+
+where:
+  <chart> is the name of the chart
+EOF
+}
+
+if [ -n "$HELM_REPO_ACCESS_TOKEN" ]; then
+  HELM_REPO_ACCESS_TOKEN_ARG="--access-token '$HELM_REPO_ACCESS_TOKEN'"
+fi
+ADDITIONAL_PUSH_ARGS="$ADDITIONAL_PUSH_ARGS $HELM_REPO_ACCESS_TOKEN_ARG"
+
+if [ -n "$TEST" ]; then ECHO=echo; fi
+if [ -n "$DBG" ]; then set +x; fi
+PUSH_CMD=${PUSH_CMD:-$ECHO helm push $ADDITIONAL_PUSH_ARGS $CHART}
+ORIGIN=${ORIGIN:-origin}
+MASTER=${MASTER:-master}
+REPOSITORY_NAME=${REPOSITORY_NAME:-archbox}
+
+RELEASE_LEVEL="$1"
+case "$RELEASE_LEVEL" in
+  major|minor|patch|prerelease|rc)
+    # ok
+    ;;
+  h|he|hel|help)
+    usage
+    exit 0
+    ;;
+  *)
+    echo "ERROR: Specify release level of 'pre', 'patch', 'minor', 'major', or 'rc'" >&2
+    usage
+    exit 1
+    ;;
+esac
+
+git pull
+
+if ! git diff --exit-code --no-patch; then
+  echo 'ERROR: You have modified tracked files; only release from clean directories!' >&2
+  exit 3
+fi
+if ! git diff --cached --exit-code --no-patch; then
+  echo 'ERROR: You have cached modified tracked files; only release from clean directories!' >&2
+  exit 3
+fi
+
+if [ -n "$(git status -s)" ]; then
+  echo 'ERROR: You have unignored untracked files; only release from clean directories!' >&2
+  exit 2
+fi
+
+VERSION="$(cat $CHART/Chart.yml | docker run --rm -i matthewadams12/ymlx this.version)')"
+if [[ ! "$VERSION" =~ \-(pre|rc)\.[0-9]{1,}$ ]]; then
+  echo 'ERROR: repository is in an inconsistent state: version does NOT end in a prerelease suffix!' >&2
+  exit 4
+fi
+
+BRANCH="$(git status | head -n 1 | awk '{ print $3 }')"
+if [[ ! "$BRANCH" =~ ^(master|v[0-9]{1,}\.[0-9]{1,})$ ]]; then # it is not a master or a release branch
+  echo 'ERROR: You can only release from the master branch or release branches (vmajor.minor)!' >&2
+  exit 5
+fi
+
+if [ -n "$(git diff $BRANCH $ORIGIN/$BRANCH)" ]; then
+  echo "ERROR: Local branch $BRANCH differs from remote branch $ORIGIN/$BRANCH" >&2
+  exit 20
+fi
+
+if [ "$BRANCH" == 'master' ]; then
+  case "$RELEASE_LEVEL" in
+    pre|rc)
+      # ok
+      ;;
+    *)
+      echo "ERROR: Only 'pre' or 'rc' releases are permitted from the master branch." >&2
+      exit 6
+      ;;
+  esac
+fi
+
+if [[ "$BRANCH" =~ ^v[0-9]{1,}\.[0-9]{1,}$ ]]; then # this is a release branch
+  case "$RELEASE_LEVEL" in
+      pre|patch|minor|major)
+        # ok
+        ;;
+      *)
+        echo "ERROR: Only 'pre', 'patch', 'minor', or 'major' releases are permitted from a release branch." >&2
+        exit 7
+        ;;
+  esac
+fi
+
+add-helm-repo() {
+  if [ -f "$HOME/.npmrc" ] && [ -n "$(grep -E $(echo -n $1 | sed -E "s#\.#\\\.#g") ~/.npmrc)" ]; then
+    echo "WARN: already logged in to npm registry $1; skipping login" >&2
+    return 0
+  fi
+
+  if [ -z "$(helm repo list | grep "$HELM_REPO$" | awk '{print $2}')" == $HELM_REPO ]; then
+    export HELM_REPO_ACCESS_TOKEN=$HELM_REPO_ACCESS_TOKEN
+    helm repo add $CHART $HELM_REPO
+    echo "INFO: helm repo $HELM_REPO added"
+  else
+    echo "INFO: helm repo $HELM_REPO already exists"
+  fi
+
+  return 0
+}
+
+if [ "$RELEASE_LEVEL" == 'pre' ]; then
+  set -e
+  $ECHO add-helm-repo $REPOSITORY_NAME
+  set +e
+fi
+
+if [ "$BRANCH" == "$MASTER" ]; then
+  case "$RELEASE_LEVEL" in
+  rc)
+      if [[ ! "$VERSION" =~ ^([0-9]{1,})\.([0-9]{1,})\.[0-9]{1,}\-pre\.[0-9]{1,}$ ]]; then
+        echo "ERROR: The version does not match the format of major.minor.patch-pre.n required in the $MASTER branch." >&2
+        exit 8
+      fi
+
+      # create release branch
+      MAJOR=${BASH_REMATCH[1]}
+      MINOR=${BASH_REMATCH[2]}
+      NEW_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.0-rc.0"
+
+      NEW_RELEASE_BRANCH="v$MAJOR.$MINOR"
+      git checkout -b $NEW_RELEASE_BRANCH
+
+      CHART_CONTENT="$(cat $CHART/Chart.yaml)"
+      echo -n "$CHART_CONTENT" | docker run --rm -i matthewadams12/ymlx "it => { it.version = '$NEW_RELEASE_BRANCH_VERSION'; return it; }" > $CHART/Chart.yaml
+
+      git add .
+      git commit -m "release candidate $NEW_RELEASE_BRANCH_VERSION"
+      git push -u $ORIGIN $NEW_RELEASE_BRANCH
+
+      # return to master branch
+      git checkout master
+      git cherry-pick $NEW_RELEASE_BRANCH # cherry pick from release branch to get 'release xxx to rc' commit in master
+      # advance master version
+      NEW_MINOR_VERSION=$(($MINOR+1))
+      NEXT_VERSION="$MAJOR.$NEW_MINOR_VERSION.0-pre.0"
+
+      CHART_CONTENT="$(cat $CHART/Chart.yaml)"
+      echo -n "$CHART_CONTENT" | docker run --rm -i matthewadams12/ymlx "it => { it.version = '$NEXT_VERSION'; return it; }" > $CHART/Chart.yaml
+
+      git add .
+      git commit -m "prepare $NEXT_VERSION for next rc release [skip ci]"
+      git push
+
+      # return to release branch & prepare for next prerelease
+      git checkout $NEW_RELEASE_BRANCH
+      NEW_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.0-rc.1"
+
+      CHART_CONTENT="$(cat $CHART/Chart.yaml)"
+      echo -n "$CHART_CONTENT" | docker run --rm -i matthewadams12/ymlx "it => { it.version = '$NEW_RELEASE_BRANCH_VERSION'; return it; }" > $CHART/Chart.yaml
+
+      git add .
+      git commit -m "prepare for next rc $NEW_RELEASE_BRANCH_VERSION [skip ci]"
+      git push
+
+      echo "released $NEW_RELEASE_BRANCH_VERSION"
+      exit 0
+      ;;
+
+  prerelease)
+      if [[ ! "$VERSION" =~ ^([0-9]{1,})\.([0-9]{1,})\.([0-9]{1,})\-pre\.([0-9]{1,})$ ]]; then
+        echo "ERROR: The version does not match the format of n.n.n-pre.n required in the $MASTER branch." >&2
+        exit 8
+      fi
+      $PUSH_CMD
+      git tag "v$VERSION"
+      RELEASED_VERSION="$VERSION"
+
+      MAJOR=${BASH_REMATCH[1]}
+      MINOR=${BASH_REMATCH[2]}
+      PATCH=${BASH_REMATCH[3]}
+      PRE=${BASH_REMATCH[4]}
+
+      CHART_CONTENT="$(cat archbox-common/Chart.yaml)"
+      echo -n "$CHART_CONTENT" | docker run --rm -i matthewadams12/ymlx "it => { it.version = '$MAJOR.$MINOR.$PATCH-pre.$PRE'; return it; }" > $CHART/Chart.yaml
+
+      VERSION="$(cat $CHART/Chart.yml | docker run --rm -i matthewadams12/ymlx this.version)')"
+      git add .
+      git commit -m "prepare $VERSION for next prerelease [skip ci]"
+      git push
+      git push --tags
+      echo "released $RELEASED_VERSION"
+      exit 0
+      ;;
+  esac
+fi
+
+# If we get this far, we are releasing something from a release branch.
+
+if [[ ! "$VERSION" =~ ^([0-9]{1,})\.([0-9]{1,})\.([0-9]{1,})\-rc\.([0-9]{1,})$ ]]; then
+  echo "ERROR: The version does not match the format of major.minor.patch-rc.n required in the release branch." >&2
+  exit 9
+fi
+MAJOR=${BASH_REMATCH[1]}
+MINOR=${BASH_REMATCH[2]}
+PATCH=${BASH_REMATCH[3]}
+PRE=${BASH_REMATCH[4]}
+
+case "$RELEASE_LEVEL" in
+  major|minor|patch)
+
+    # NOTE: if RELEASE_LEVEL is 'minor' & we're prepped for a major release, no harm, no foul.
+    # A major release is the same as a minor release, only that the minor version is 0.
+
+    if [ $RELEASE_LEVEL == 'major' ] && [ $MINOR != '0' ]; then
+      echo "ERROR: This branch is not prepared for a major release because the minor version is $MINOR (not 0)." >&2
+      exit 10
+    else
+      NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.0-rc.0"
+    fi
+    if [ $RELEASE_LEVEL == 'minor' ] && [ $PATCH != '0' ]; then
+      echo "ERROR: A minor release has already been performed in this branch; only patch releases are allowed now in this release branch." >&2
+      exit 11
+    else
+      NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.0-rc.0"
+    fi
+    if [ $RELEASE_LEVEL == 'patch' ] && [ $PATCH == '0' ]; then
+      echo "ERROR: You must release a minor release before releasing a patch in this release branch." >&2
+      exit 12
+    else
+      NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.$((PATCH+1))-rc.0"
+    fi
+
+    RELEASE_VERSION="$MAJOR.$MINOR.$PATCH"
+
+    CHART_CONTENT="$(cat $CHART/Chart.yaml)"
+    echo -n "$CHART_CONTENT" | docker run --rm -i matthewadams12/ymlx "it => { it.version = '$RELEASE_VERSION'; return it; }" > $CHART/Chart.yaml
+
+    git add .
+    git commit -m "release $RELEASE_VERSION"
+    git tag "v$RELEASE_VERSION"
+    git push
+    git push --tags
+
+    CHART_CONTENT="$(cat $CHART/Chart.yaml)"
+    echo -n "$CHART_CONTENT" | docker run --rm -i matthewadams12/ymlx "it => { it.version = '$NEXT_RELEASE_BRANCH_VERSION'; return it; }" > $CHART/Chart.yaml
+
+    git add .
+    git commit -m "prepare $VERSION for next patch [skip ci]"
+    git push
+    echo "released $RELEASED_VERSION"
+    exit 0
+    ;;
+
+  rc)
+    $PUSH_CMD
+
+    git tag "v$VERSION"
+
+    NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.$PATCH-rc.$((PRE+1))"
+
+    CHART_CONTENT="$(cat $CHART/Chart.yaml)"
+    echo -n "$CHART_CONTENT" | docker run --rm -i matthewadams12/ymlx "it => { it.version = '$NEXT_RELEASE_BRANCH_VERSION'; return it; }" > $CHART/Chart.yaml
+
+    git add .
+    git commit -m "prepare $VERSION for next prerelease [skip ci]"
+    git push
+    git push --tags
+    echo "released $VERSION"
+    exit 0
+    ;;
+esac
