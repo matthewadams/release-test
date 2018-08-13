@@ -3,8 +3,8 @@
 # This script implements the release branch workflow for helm charts.
 #
 # Requirements:
-# * git
-# * docker
+# git
+# docker
 
 usage() {
     cat<<EOF
@@ -16,13 +16,6 @@ where:
   <chart> is the name of the chart
 EOF
 }
-
-HELM_REPO=${HELM_REPO:-cm://h.cfcr.io/scispike/$CHART}
-
-if [ -n "$HELM_REPO_ACCESS_TOKEN" ]; then
-  HELM_REPO_ACCESS_TOKEN_ARG="--access-token '$HELM_REPO_ACCESS_TOKEN'"
-fi
-ADDITIONAL_PUSH_ARGS="$ADDITIONAL_PUSH_ARGS $HELM_REPO_ACCESS_TOKEN_ARG"
 
 if [ -n "$TEST" ]; then ECHO=echo; fi
 if [ -n "$DBG" ]; then set -x; fi
