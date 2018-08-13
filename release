@@ -29,7 +29,7 @@ MASTER=${MASTER:-master}
 
 RELEASE_LEVEL="$1"
 case "$RELEASE_LEVEL" in
-  major|minor|patch|prerelease|rc)
+  major|minor|patch|pre|rc)
     # ok
     ;;
   h|he|hel|help)
