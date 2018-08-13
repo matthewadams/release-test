@@ -51,14 +51,14 @@ if [ -z "$CHART" ]; then
 fi
 CHART=${CHART%/}
 
-git pull >/dev/null
+git pull > /dev/null 2>&1
 
-if ! git diff --exit-code --no-patch >/dev/null; then
+if ! git diff --exit-code --no-patch > /dev/null 2>&1; then
   echo 'ERROR: You have modified tracked files; only release from clean directories!' >&2
   exit 3
 fi
 
-if ! git diff --cached --exit-code --no-patch >/dev/null; then
+if ! git diff --cached --exit-code --no-patch > /dev/null 2>&1; then
   echo 'ERROR: You have cached modified tracked files; only release from clean directories!' >&2
   exit 3
 fi
@@ -80,7 +80,7 @@ if [[ ! "$BRANCH" =~ ^(master|v[0-9]{1,}\.[0-9]{1,})$ ]]; then # it is not a mas
   exit 3
 fi
 
-if ! git diff --exit-code -no-patch $BRANCH $ORIGIN/$BRANCH >/dev/null; then
+if ! git diff --exit-code -no-patch $BRANCH $ORIGIN/$BRANCH > /dev/null 2>&1; then
   echo "ERROR: Local branch $BRANCH differs from remote branch $ORIGIN/$BRANCH" >&2
   exit 3
 fi
@@ -122,7 +122,7 @@ if [ "$BRANCH" == "$MASTER" ]; then
   case "$RELEASE_LEVEL" in
   rc) # then it's time to create a new release branch
       NEW_RELEASE_BRANCH="v$MAJOR.$MINOR"
-      git checkout -b $NEW_RELEASE_BRANCH >/dev/null
+      git checkout -b $NEW_RELEASE_BRANCH > /dev/null 2>&1
 
       NEW_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.0-rc.0"
 
@@ -131,15 +131,15 @@ if [ "$BRANCH" == "$MASTER" ]; then
         | docker run --rm -i matthewadams12/ymlx "it => { it.version = '$NEW_RELEASE_BRANCH_VERSION'; return it; }" \
         > $CHART/Chart.yaml
 
-      git add . >/dev/null
-      git commit -m "release $NEW_RELEASE_BRANCH_VERSION" >/dev/null
-      git tag $NEW_RELEASE_BRANCH_VERSION >/dev/null
-      git push -u $ORIGIN $NEW_RELEASE_BRANCH >/dev/null
-      git push --tags >/dev/null
+      git add . > /dev/null 2>&1
+      git commit -m "release $NEW_RELEASE_BRANCH_VERSION" > /dev/null 2>&1
+      git tag $NEW_RELEASE_BRANCH_VERSION > /dev/null 2>&1
+      git push -u $ORIGIN $NEW_RELEASE_BRANCH > /dev/null 2>&1
+      git push --tags > /dev/null 2>&1
 
       # return to master branch
-      git checkout $MASTER >/dev/null
-      git cherry-pick $NEW_RELEASE_BRANCH >/dev/null # cherry pick from release branch to get release candidate commit in master
+      git checkout $MASTER > /dev/null 2>&1
+      git cherry-pick $NEW_RELEASE_BRANCH > /dev/null 2>&1 # cherry pick from release branch to get release candidate commit in master
       # advance master version
       NEXT_VERSION="$MAJOR.$(($MINOR+1)).0-pre.0"
 
@@ -148,12 +148,12 @@ if [ "$BRANCH" == "$MASTER" ]; then
         | docker run --rm -i matthewadams12/ymlx "it => { it.version = '$NEXT_VERSION'; return it; }" \
         > $CHART/Chart.yaml
 
-      git add . >/dev/null
-      git commit -m "bump to $NEXT_VERSION [skip ci]" >/dev/null
-      git push >/dev/null
+      git add . > /dev/null 2>&1
+      git commit -m "bump to $NEXT_VERSION [skip ci]" > /dev/null 2>&1
+      git push > /dev/null 2>&1
 
       # return to release branch & prepare for next prerelease
-      git checkout $NEW_RELEASE_BRANCH >/dev/null
+      git checkout $NEW_RELEASE_BRANCH > /dev/null 2>&1
       NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.0-rc.1"
 
       CHART_CONTENT="$(cat $CHART/Chart.yaml)"
@@ -161,16 +161,16 @@ if [ "$BRANCH" == "$MASTER" ]; then
         | docker run --rm -i matthewadams12/ymlx "it => { it.version = '$NEXT_RELEASE_BRANCH_VERSION'; return it; }" \
         > $CHART/Chart.yaml
 
-      git add . >/dev/null
-      git commit -m "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]" >/dev/null
-      git push >/dev/null
+      git add . > /dev/null 2>&1
+      git commit -m "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]" > /dev/null 2>&1
+      git push > /dev/null 2>&1
 
       echo "tagged $NEW_RELEASE_BRANCH_VERSION for release"
       exit 0
       ;;
 
   pre)
-      git tag "v$VERSION" >/dev/null
+      git tag "v$VERSION" > /dev/null 2>&1
       RELEASED_VERSION="$VERSION"
       NEXT_VERSION=$MAJOR.$MINOR.$PATCH-pre.$((PRE+1))
 
@@ -179,10 +179,10 @@ if [ "$BRANCH" == "$MASTER" ]; then
         | docker run --rm -i matthewadams12/ymlx "it => { it.version = '$NEXT_VERSION'; return it; }" \
         > $CHART/Chart.yaml
 
-      git add . >/dev/null
-      git commit -m "bump to $NEXT_VERSION [skip ci]" >/dev/null
-      git push >/dev/null
-      git push --tags >/dev/null
+      git add . > /dev/null 2>&1
+      git commit -m "bump to $NEXT_VERSION [skip ci]" > /dev/null 2>&1
+      git push > /dev/null 2>&1
+      git push --tags > /dev/null 2>&1
       echo "tagged $RELEASED_VERSION for release"
       exit 0
       ;;
@@ -232,26 +232,26 @@ case "$RELEASE_LEVEL" in
       | docker run --rm -i matthewadams12/ymlx "it => { it.version = '$RELEASE_VERSION'; return it; }" \
       > $CHART/Chart.yaml
 
-    git add . >/dev/null
-    git commit -m "release $RELEASE_VERSION" >/dev/null
-    git tag "v$RELEASE_VERSION" >/dev/null
-    git push >/dev/null
-    git push --tags >/dev/null
+    git add . > /dev/null 2>&1
+    git commit -m "release $RELEASE_VERSION" > /dev/null 2>&1
+    git tag "v$RELEASE_VERSION" > /dev/null 2>&1
+    git push > /dev/null 2>&1
+    git push --tags > /dev/null 2>&1
 
     CHART_CONTENT="$(cat $CHART/Chart.yaml)"
     echo -n "$CHART_CONTENT" \
       | docker run --rm -i matthewadams12/ymlx "it => { it.version = '$NEXT_RELEASE_BRANCH_VERSION'; return it; }" \
       > $CHART/Chart.yaml
 
-    git add . >/dev/null
-    git commit -m "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]" >/dev/null
-    git push >/dev/null
-    echo "tagged $RELEASED_VERSION" >/dev/null
+    git add . > /dev/null 2>&1
+    git commit -m "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]" > /dev/null 2>&1
+    git push > /dev/null 2>&1
+    echo "tagged $RELEASED_VERSION" > /dev/null 2>&1
     exit 0
     ;;
 
   rc)
-    git tag "v$VERSION" >/dev/null
+    git tag "v$VERSION" > /dev/null 2>&1
 
     NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.$PATCH-rc.$((PRE+1))"
 
@@ -260,11 +260,11 @@ case "$RELEASE_LEVEL" in
       | docker run --rm -i matthewadams12/ymlx "it => { it.version = '$NEXT_RELEASE_BRANCH_VERSION'; return it; }" \
       > $CHART/Chart.yaml
 
-    git add . >/dev/null
-    git commit -m "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]" >/dev/null
-    git push >/dev/null
-    git push --tags >/dev/null
-    echo "tagged v$VERSION" >/dev/null
+    git add . > /dev/null 2>&1
+    git commit -m "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]" > /dev/null 2>&1
+    git push > /dev/null 2>&1
+    git push --tags > /dev/null 2>&1
+    echo "tagged v$VERSION" > /dev/null 2>&1
     exit 0
     ;;
 esac
