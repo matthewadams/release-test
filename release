@@ -6,6 +6,8 @@
 # git
 # docker
 
+# TODO: port this from bash to plain ol' sh (regex matching needs to be ported)
+
 usage() {
     cat<<EOF
 usage:
