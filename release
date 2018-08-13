@@ -100,7 +100,7 @@ if [ "$BRANCH" == "$MASTER" ]; then
   esac
 else # this is a release branch
   case "$RELEASE_LEVEL" in
-      pre|patch|minor|major)
+      rc|patch|minor|major)
         # ok
         ;;
       *)
