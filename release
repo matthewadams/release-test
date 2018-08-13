@@ -68,7 +68,7 @@ if [ -n "$(git status -s)" ]; then
   exit 3
 fi
 
-VERSION="$(cat $CHART/Chart.yml | docker run --rm -i matthewadams12/ymlx this.version)"
+VERSION="$(cat $CHART/Chart.yaml | docker run --rm -i matthewadams12/ymlx this.version)"
 if [[ ! "$VERSION" =~ \-(pre|rc)\.[0-9]{1,}$ ]]; then
   echo 'ERROR: repository is in an inconsistent state: version does NOT end in a prerelease suffix!' >&2
   exit 3
