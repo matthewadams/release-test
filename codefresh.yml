@@ -10,5 +10,5 @@ steps:
     title: Pushing to Docker Registry
     type: push
     candidate: '${{BuildingDockerImage}}'
-    tag: 10.1.0-pre.0
+    tag: 10.1.0-pre.1
     registry: scispike
