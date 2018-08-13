@@ -39,13 +39,12 @@ case "$RELEASE_LEVEL" in
     ;;
 esac
 
-CHART=$2
+CHART=${2%/} # drop trailing slash if it's there
 if [ -z "$CHART" ]; then
   echo "ERROR: no chart name given"
   usage
   exit 1
 fi
-CHART=${CHART%/}
 
 git pull > /dev/null 2>&1
 
