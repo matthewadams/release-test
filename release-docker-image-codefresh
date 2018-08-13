@@ -139,7 +139,7 @@ if [ "$BRANCH" == "$MASTER" ]; then
 
       CODEFRESH_YML_CONTENT="$(cat "$CODEFRESH_YML")"
       echo -n "$CODEFRESH_YML_CONTENT" \
-        | $docker run --rm -i matthewadams12/ymlx "it => { it.steps['$DOCKER_PUSH_STEP_NAME'].tag = '$NEXT_VERSION'; return it; }" \
+        | docker run --rm -i matthewadams12/ymlx "it => { it.steps['$DOCKER_PUSH_STEP_NAME'].tag = '$NEXT_VERSION'; return it; }" \
         > "$CODEFRESH_YML"
 
       git add . > /dev/null 2>&1
@@ -152,7 +152,7 @@ if [ "$BRANCH" == "$MASTER" ]; then
 
       CODEFRESH_YML_CONTENT="$(cat "$CODEFRESH_YML")"
       echo -n "$CODEFRESH_YML_CONTENT" \
-        | $docker run --rm -i matthewadams12/ymlx "it => { it.steps['$DOCKER_PUSH_STEP_NAME'].tag = '$NEXT_RELEASE_BRANCH_VERSION'; return it; }" \
+        | docker run --rm -i matthewadams12/ymlx "it => { it.steps['$DOCKER_PUSH_STEP_NAME'].tag = '$NEXT_RELEASE_BRANCH_VERSION'; return it; }" \
         > "$CODEFRESH_YML"
 
       git add . > /dev/null 2>&1
@@ -170,7 +170,7 @@ if [ "$BRANCH" == "$MASTER" ]; then
 
       CODEFRESH_YML_CONTENT="$(cat "$CODEFRESH_YML")"
       echo -n "$CODEFRESH_YML_CONTENT" \
-        | $docker run --rm -i matthewadams12/ymlx "it => { it.steps['$DOCKER_PUSH_STEP_NAME'].tag = '$NEXT_VERSION'; return it; }" \
+        | docker run --rm -i matthewadams12/ymlx "it => { it.steps['$DOCKER_PUSH_STEP_NAME'].tag = '$NEXT_VERSION'; return it; }" \
         > "$CODEFRESH_YML"
 
       git add . > /dev/null 2>&1
@@ -223,7 +223,7 @@ case "$RELEASE_LEVEL" in
 
     CODEFRESH_YML_CONTENT="$(cat "$CODEFRESH_YML")"
     echo -n "$CODEFRESH_YML_CONTENT" \
-      | $docker run --rm -i matthewadams12/ymlx "it => { it.steps['$DOCKER_PUSH_STEP_NAME'].tag = '$RELEASE_VERSION'; return it; }" \
+      | docker run --rm -i matthewadams12/ymlx "it => { it.steps['$DOCKER_PUSH_STEP_NAME'].tag = '$RELEASE_VERSION'; return it; }" \
       > "$CODEFRESH_YML"
 
     git add . > /dev/null 2>&1
@@ -234,7 +234,7 @@ case "$RELEASE_LEVEL" in
 
     CODEFRESH_YML_CONTENT="$(cat "$CODEFRESH_YML")"
     echo -n "$CODEFRESH_YML_CONTENT" \
-      | $docker run --rm -i matthewadams12/ymlx "it => { it.steps['$DOCKER_PUSH_STEP_NAME'].tag = '$NEXT_RELEASE_BRANCH_VERSION'; return it; }" \
+      | docker run --rm -i matthewadams12/ymlx "it => { it.steps['$DOCKER_PUSH_STEP_NAME'].tag = '$NEXT_RELEASE_BRANCH_VERSION'; return it; }" \
       > "$CODEFRESH_YML"
 
     git add . > /dev/null 2>&1
@@ -251,7 +251,7 @@ case "$RELEASE_LEVEL" in
 
     CODEFRESH_YML_CONTENT="$(cat "$CODEFRESH_YML")"
     echo -n "$CODEFRESH_YML_CONTENT" \
-      | $docker run --rm -i matthewadams12/ymlx "it => { it.steps['$DOCKER_PUSH_STEP_NAME'].tag = '$NEXT_RELEASE_BRANCH_VERSION'; return it; }" \
+      | docker run --rm -i matthewadams12/ymlx "it => { it.steps['$DOCKER_PUSH_STEP_NAME'].tag = '$NEXT_RELEASE_BRANCH_VERSION'; return it; }" \
       > "$CODEFRESH_YML"
 
     git add . > /dev/null 2>&1
