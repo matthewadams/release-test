@@ -53,7 +53,6 @@ if [ -z "$CHART" ]; then
   exit 1
 fi
 CHART=${CHART%/}
-echo "@@@ $CHART"
 
 git pull > /dev/null 2>&1
 
