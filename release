@@ -249,7 +249,7 @@ case "$RELEASE_LEVEL" in
     git add . > /dev/null 2>&1
     git commit -m "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]" > /dev/null 2>&1
     git push > /dev/null 2>&1
-    echo "tagged $RELEASED_VERSION" > /dev/null 2>&1
+    echo "tagged $RELEASED_VERSION"
     exit 0
     ;;
 
@@ -267,7 +267,7 @@ case "$RELEASE_LEVEL" in
     git commit -m "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]" > /dev/null 2>&1
     git push > /dev/null 2>&1
     git push --tags > /dev/null 2>&1
-    echo "tagged v$VERSION" > /dev/null 2>&1
+    echo "tagged v$VERSION"
     exit 0
     ;;
 esac
