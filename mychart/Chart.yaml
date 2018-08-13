@@ -1,4 +1,4 @@
 apiVersion: v1
 name: mychart
 description: A test chart
-version: 0.1.0-rc.1
+version: 0.1.0-rc.2
