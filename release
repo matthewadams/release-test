@@ -2,6 +2,9 @@
 #
 # This script implements the release workflow for helm charts.
 #
+# Requirements:
+# * git
+# * docker
 
 usage() {
     cat<<EOF
