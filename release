@@ -180,7 +180,7 @@ if [ "$BRANCH" == "$MASTER" ]; then
         > $CHART/Chart.yaml
 
       git add .
-      git commit -m "bump to $VERSION [skip ci]"
+      git commit -m "bump to $NEXT_VERSION [skip ci]"
       git push
       git push --tags
       echo "tagged $RELEASED_VERSION for release"
