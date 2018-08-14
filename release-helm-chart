@@ -133,7 +133,7 @@ if [ "$BRANCH" == "$MASTER" ]; then
 
       git add . > /dev/null 2>&1
       git commit -m "release $NEW_RELEASE_BRANCH_VERSION" > /dev/null 2>&1
-      git tag $NEW_RELEASE_BRANCH_VERSION > /dev/null 2>&1
+      git tag "v$NEW_RELEASE_BRANCH_VERSION" > /dev/null 2>&1
       git push -u $ORIGIN $NEW_RELEASE_BRANCH > /dev/null 2>&1
       git push --tags > /dev/null 2>&1
 
