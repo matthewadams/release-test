@@ -43,9 +43,14 @@ esac
 
 CHART_NAME=${2%/} # drop trailing slash if it's there
 if [ -z "$CHART_NAME" ]; then
-  echo "ERROR: no chart name given"
-  usage
-  exit 1
+  NON_DOT_DIRS="$(find . -type d -depth 1 | sed 's|^\./||' | grep -v '^\.')"
+  if [ $(echo "$NON_DOT_DIRS" | wc -l | xargs) == 1 ]; then
+    CHART_NAME=$NON_DOT_DIRS
+  else
+    echo "ERROR: no chart name given & can't guess chart name from child directories in this directory"
+    usage
+    exit 1
+  fi
 fi
 CHART_DIR=${CHART_DIR:-$CHART_NAME}
 CHART_DIR=${CHART_DIR%/} # drop trailing slash if it's there
