@@ -170,6 +170,11 @@ if [ "$BRANCH" == "$MASTER" ]; then
       ;;
 
   pre)
+      if git log -1 --pretty=%s | grep -q '\[skip ci\]'; then
+        # force empty commit so that tag doesn't point at a "[skip ci]" commit
+        git commit --allow-empty -m 'empty pre commit'
+      fi
+
       git tag "v$VERSION" > /dev/null 2>&1
       RELEASED_VERSION="$VERSION"
       NEXT_VERSION=$MAJOR.$MINOR.$PATCH-pre.$((PRE+1))
@@ -251,6 +256,11 @@ case "$RELEASE_LEVEL" in
     ;;
 
   rc)
+    if git log -1 --pretty=%s | grep -q '\[skip ci\]'; then
+      # force empty commit so that tag doesn't point at a "[skip ci]" commit
+      git commit --allow-empty -m 'empty rc commit'
+    fi
+
     git tag "v$VERSION" > /dev/null 2>&1
 
     NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.$PATCH-rc.$((PRE+1))"
