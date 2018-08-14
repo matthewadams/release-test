@@ -15,7 +15,9 @@ usage:
 if on release branch: release major|minor|patch|pre [<chart>]
 
 where:
-  <chart> is the name of the chart (and its directory; if ".", dirname of parent is assumed)
+  <chart> is the name of the chart and its directory, unless it's "."
+    * if "." is given, chart name is assumed to be the name of the directory containing ".", otherwise
+    * the default value is the only dirname in this directory that doesn't start with ".", unless there are multiple
 EOF
 }
 
