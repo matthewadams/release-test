@@ -11,11 +11,11 @@
 usage() {
     cat<<EOF
 usage:
- if on master branch: release pre|rc <chart>
-if on release branch: release major|minor|patch|pre <chart>
+ if on master branch: release pre|rc [<chart>]
+if on release branch: release major|minor|patch|pre [<chart>]
 
 where:
-  <chart> is the name of the chart
+  <chart> is the name of the chart (and its directory; if ".", dirname of parent is assumed)
 EOF
 }
 
@@ -42,14 +42,24 @@ case "$RELEASE_LEVEL" in
 esac
 
 CHART_NAME=${2%/} # drop trailing slash if it's there
-if [ -z "$CHART_NAME" ]; then
-  echo "ERROR: no chart name given"
-  usage
-  exit 1
+if [ "$CHART_NAME" == '.' ]; then
+  CHART_NAME="$(basename $(pwd))"
+  CHART_NAME="${CHART_NAME%/}"
+  echo "INFO: using $CHART_NAME as chart name"
+elif [ -z "$CHART_NAME" ]; then
+  NON_DOT_DIRS="$(find . -type d -depth 1 | sed 's|^\./||g' | grep -v '^\.')" # directories that don't start with '.'
+  if [ $(echo "$NON_DOT_DIRS" | wc -l | xargs) == 1 ]; then # we'll assume this sole dir is chart dir
+    CHART_NAME="${NON_DOT_DIRS%/}"
+    echo "INFO: using $CHART_NAME as chart name"
+  else
+    echo "ERROR: no chart name given & can't guess chart name from child directories in this directory"
+    usage
+    exit 1
+  fi
 fi
-CHART_DIR=${CHART_DIR:-$CHART_NAME}
-CHART_DIR=${CHART_DIR%/} # drop trailing slash if it's there
-CHART_FILE=${CHART_FILE:-$CHART_DIR/Chart.yaml}
+CHART_DIR="${CHART_DIR:-$CHART_NAME}"
+CHART_DIR="${CHART_DIR%/}"
+CHART_FILE="${CHART_FILE:-$CHART_DIR/Chart.yaml}"
 
 git pull > /dev/null 2>&1
 
