@@ -19,3 +19,8 @@ steps:
     type: push
     candidate: '${{BuildingDockerImage}}'
     registry: scispike
+  PushingToDockerRegistry2:
+    title: Pushing to Docker Registry
+    type: push
+    candidate: '${{BuildingDockerImage2}}'
+    registry: scispike
