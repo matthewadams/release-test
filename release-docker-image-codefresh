@@ -119,7 +119,7 @@ else # this is a release branch
         # ok
         ;;
       *)
-        echo "ERROR: Only 'pre', 'patch', 'minor', or 'major' releases are permitted from a release branch." >&2
+        echo "ERROR: Only 'rc', 'patch', 'minor', or 'major' releases are permitted from a release branch." >&2
         exit 7
         ;;
   esac
