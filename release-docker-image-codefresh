@@ -25,7 +25,6 @@ ORIGIN                    name of git remote, default 'origin'
 MASTER                    name of master branch, default 'master'
 CODEFRESH_YML             name of codefresh.yml file, default 'codefresh.yml'
 DOCKER_BUILD_STEP_NAMES   comma-separated list of build step names, defaults from file \$CODEFRESH_YML
-DOCKER_PUSH_STEP_NAMES    comma-separated list of push step names, defaults from file \$CODEFRESH_YML
 EOF
 }
 
@@ -62,12 +61,6 @@ FIRST_DOCKER_BUILD_STEP_NAME="$(echo -n "$DOCKER_BUILD_STEP_NAMES" | awk '{print
 if [ -z "$FIRST_DOCKER_BUILD_STEP_NAME" ]; then
   echo "ERROR: no Docker build steps found in file $CODEFRESH_YML" >&2
   exit 13
-fi
-
-if [ -n "$DOCKER_PUSH_STEP_NAMES" ]; then
-  DOCKER_PUSH_STEP_NAMES="$(echo -n "$DOCKER_PUSH_STEP_NAMES" | tr "," " ")" # replace commas with spaces
-else
-  DOCKER_PUSH_STEP_NAMES="$(cat "$CODEFRESH_YML" | docker run --rm -i matthewadams12/ymlx 'Object.keys(this.steps).filter(it => this.steps[`${it}`].type === "push").join(" ")')"
 fi
 
 git pull > /dev/null 2>&1
@@ -145,7 +138,7 @@ if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a 
 
       NEW_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.0-rc.0"
 
-      for step in $DOCKER_PUSH_STEP_NAMES; do
+      for step in $DOCKER_BUILD_STEP_NAMES; do
         CODEFRESH_YML_CONTENT="$(cat "$CODEFRESH_YML")"
         echo -n "$CODEFRESH_YML_CONTENT" \
           | docker run --rm -i matthewadams12/ymlx "it => { it.steps['$step'].tag = '$NEW_RELEASE_BRANCH_VERSION'; return it; }" \
@@ -168,11 +161,6 @@ if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a 
         CODEFRESH_YML_CONTENT="$(cat "$CODEFRESH_YML")"
         echo -n "$CODEFRESH_YML_CONTENT" \
           | docker run --rm -i matthewadams12/ymlx "it => { it.steps['$step'].tag = '$NEXT_VERSION'; return it; }" \
-          > "$CODEFRESH_YML"
-      done
-      for step in $DOCKER_PUSH_STEP_NAMES; do
-        echo -n "$CODEFRESH_YML_CONTENT" \
-          | docker run --rm -i matthewadams12/ymlx "it => { delete it.steps['$step'].tag; return it; }" \
           > "$CODEFRESH_YML"
       done
 
