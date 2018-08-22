@@ -24,7 +24,7 @@ variable                  description
 ORIGIN                    name of git remote, default 'origin'
 MASTER                    name of master branch, default 'master'
 CODEFRESH_YML             name of codefresh.yml file, default 'codefresh.yml'
-DOCKER_BUILD_STEP_NAMES   comma-separated list of build step names, defaults from file \$CODEFRESH_YML
+DOCKER_BUILD_STEP_NAMES   comma-separated list of build step names, defaults to all build steps in \$CODEFRESH_YML
 EOF
 }
 
