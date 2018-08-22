@@ -54,7 +54,7 @@ esac
 
 CODEFRESH_YML=${CODEFRESH_YML:-codefresh.yml}
 
-if [ -z "$DOCKER_BUILD_STEP_NAMES" ]; then
+if [ -n "$DOCKER_BUILD_STEP_NAMES" ]; then
   DOCKER_BUILD_STEP_NAMES="$(echo -n "$DOCKER_BUILD_STEP_NAMES" | tr "," " ")" # replace commas with spaces
 else
   DOCKER_BUILD_STEP_NAMES="$(cat "$CODEFRESH_YML" | docker run --rm -i matthewadams12/ymlx 'Object.keys(this.steps).filter(this.steps[`${it}`].type === "build").join(" ")')"
