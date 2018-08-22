@@ -6,9 +6,9 @@ steps:
     image_name: archbox/kafka
     working_directory: ./
     dockerfile: Dockerfile
+    tag: 10.2.0-pre.0
   PushingToDockerRegistry:
     title: Pushing to Docker Registry
     type: push
     candidate: '${{BuildingDockerImage}}'
-    tag: 10.2.0-pre.0
     registry: scispike
