@@ -57,7 +57,7 @@ CODEFRESH_YML=${CODEFRESH_YML:-codefresh.yml}
 if [ -n "$DOCKER_BUILD_STEP_NAMES" ]; then
   DOCKER_BUILD_STEP_NAMES="$(echo -n "$DOCKER_BUILD_STEP_NAMES" | tr "," " ")" # replace commas with spaces
 else
-  DOCKER_BUILD_STEP_NAMES="$(cat "$CODEFRESH_YML" | docker run --rm -i matthewadams12/ymlx 'Object.keys(this.steps).filter(this.steps[`${it}`].type === "build").join(" ")')"
+  DOCKER_BUILD_STEP_NAMES="$(cat "$CODEFRESH_YML" | docker run --rm -i matthewadams12/ymlx 'Object.keys(this.steps).filter(it => this.steps[`${it}`].type === "build").join(" ")')"
 fi
 FIRST_DOCKER_BUILD_STEP_NAME="$(echo -n "$DOCKER_BUILD_STEP_NAMES" | awk '{print $1}')"
 if [ -z "$FIRST_DOCKER_BUILD_STEP_NAME" ]; then
