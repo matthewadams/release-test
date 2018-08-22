@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -x
 
 # This script implements the release branch workflow for docker images built by codefresh.io.
 #
