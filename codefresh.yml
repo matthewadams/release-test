@@ -6,7 +6,7 @@ steps:
     image_name: archbox/kafka
     working_directory: ./
     dockerfile: Dockerfile
-    tag: 10.2.0-pre.0
+    tag: 10.2.0-pre.1
   PushingToDockerRegistry:
     title: Pushing to Docker Registry
     type: push
