@@ -183,7 +183,7 @@ apply() {
 
   if [ -n "$2" ]; then
     git tag "$2" > /dev/null 2>&1
-    echo "tagged $2"
+    echo "INFO: tagged $2"
     MSG="$MSG & tags"
   fi
 
