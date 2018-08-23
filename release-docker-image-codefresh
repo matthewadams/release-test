@@ -219,14 +219,14 @@ if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a 
       git tag $NEW_RELEASE_BRANCH_VERSION > /dev/null 2>&1
       git push -u $ORIGIN $NEW_RELEASE_BRANCH > /dev/null 2>&1
       git push --tags > /dev/null 2>&1
-      echo "created release branch $NEW_RELEASE_BRANCH and tagged $NEW_RELEASE_BRANCH_VERSION for release"
+      echo "INFO: created release branch $NEW_RELEASE_BRANCH and tagged $NEW_RELEASE_BRANCH_VERSION for release"
 
       # return to master branch
       git checkout $MASTER > /dev/null 2>&1
-      echo "checked out $MASTER"
+      echo "INFO: checked out $MASTER"
 
       git cherry-pick $NEW_RELEASE_BRANCH > /dev/null 2>&1 # cherry pick from release branch to get release candidate commit in master
-      echo "cherry-picked $NEW_RELEASE_BRANCH rc commit into $MASTER"
+      echo "INFO: cherry-picked $NEW_RELEASE_BRANCH rc commit into $MASTER"
 
       # advance master version
       NEXT_VERSION="$MAJOR.$(($MINOR+1)).0-pre.0"
@@ -238,7 +238,7 @@ if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a 
 
       # return to release branch & prepare for next prerelease
       git checkout $NEW_RELEASE_BRANCH > /dev/null 2>&1
-      echo "checked out $NEW_RELEASE_BRANCH"
+      echo "INFO: checked out $NEW_RELEASE_BRANCH"
 
       NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.0-rc.1"
 
