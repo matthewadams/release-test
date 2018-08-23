@@ -135,6 +135,7 @@ setVersion() {
       | docker run --rm -i matthewadams12/ymlx "it => { it.steps['$step'].tag = '$V'; return it; }" \
       > "$CODEFRESH_YML"
   done
+  echo "set 'tag' attribute in $CODEFRESH_YML steps $@ to $V"
 }
 unsetVersion() {
   STEP_NAMES="$@"
@@ -144,6 +145,23 @@ unsetVersion() {
       | docker run --rm -i matthewadams12/ymlx "it => { delete it.steps['$step'].tag; return it; }" \
       > "$CODEFRESH_YML"
   done
+  echo "removed 'tag' attribute in $CODEFRESH_YML steps $@"
+}
+
+apply() {
+  git add . > /dev/null 2>&1
+  git commit -m "$1" > /dev/null 2>&1
+  echo "committed changes with message: $1"
+
+  if [ -n "$2" ]; then
+    git tag "$2" > /dev/null 2>&1
+    echo "tagged $2"
+    MSG=" & tags"
+  fi
+
+  git push --follow-tags > /dev/null 2>&1
+  MSG="pushed commits$MSG"
+  echo "$MSG"
 }
 
 if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a new release branch, or a pre
@@ -172,54 +190,48 @@ if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a 
       git tag $NEW_RELEASE_BRANCH_VERSION > /dev/null 2>&1
       git push -u $ORIGIN $NEW_RELEASE_BRANCH > /dev/null 2>&1
       git push --tags > /dev/null 2>&1
+      echo "created release branch $NEW_RELEASE_BRANCH and tagged $NEW_RELEASE_BRANCH_VERSION for release"
 
       # return to master branch
       git checkout $MASTER > /dev/null 2>&1
+      echo "checked out $MASTER"
+
       git cherry-pick $NEW_RELEASE_BRANCH > /dev/null 2>&1 # cherry pick from release branch to get release candidate commit in master
+      echo "cherry-picked $NEW_RELEASE_BRANCH rc commit into $MASTER"
+
       # advance master version
       NEXT_VERSION="$MAJOR.$(($MINOR+1)).0-pre.0"
 
       setVersion $NEXT_VERSION $DOCKER_BUILD_STEP_NAMES
       unsetVersion $DOCKER_PUSH_STEP_NAMES
 
-      git add . > /dev/null 2>&1
-      git commit -m "bump to $NEXT_VERSION [skip ci]" > /dev/null 2>&1
-      git push > /dev/null 2>&1
+      apply "bump to $NEXT_VERSION [skip ci]"
 
       # return to release branch & prepare for next prerelease
       git checkout $NEW_RELEASE_BRANCH > /dev/null 2>&1
+      echo "checked out $NEW_RELEASE_BRANCH"
+
       NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.0-rc.1"
 
       setVersion $NEXT_RELEASE_BRANCH_VERSION $DOCKER_BUILD_STEP_NAMES
       unsetVersion $DOCKER_PUSH_STEP_NAMES
 
-      git add . > /dev/null 2>&1
-      git commit -m "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]" > /dev/null 2>&1
-      git push > /dev/null 2>&1
+      apply "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]"
 
-      echo "created release branch $NEW_RELEASE_BRANCH and tagged $NEW_RELEASE_BRANCH_VERSION for release"
       exit 0
       ;;
 
   pre)
       setVersion $VERSION $DOCKER_BUILD_STEP_NAMES $DOCKER_PUSH_STEP_NAMES
 
-      git add . > /dev/null 2>&1
-      git commit -m "release $VERSION" > /dev/null 2>&1
-      git tag "$VERSION" > /dev/null 2>&1
-      git push > /dev/null 2>&1
-      git push --tags > /dev/null 2>&1
+      apply "release $VERSION" $VERSION
 
-      RELEASED_VERSION="$VERSION"
       NEXT_VERSION=$MAJOR.$MINOR.$PATCH-pre.$((PRE+1))
-      echo "tagged $RELEASED_VERSION for release"
 
       setVersion $NEXT_VERSION $DOCKER_BUILD_STEP_NAMES
       unsetVersion $DOCKER_PUSH_STEP_NAMES
 
-      git add . > /dev/null 2>&1
-      git commit -m "bump to $NEXT_VERSION [skip ci]" > /dev/null 2>&1
-      git push > /dev/null 2>&1
+      apply "bump to $NEXT_VERSION [skip ci]"
 
       exit 0
       ;;
@@ -266,41 +278,27 @@ case "$RELEASE_LEVEL" in
 
     setVersion $RELEASE_VERSION $DOCKER_BUILD_STEP_NAMES $DOCKER_PUSH_STEP_NAMES
 
-    git add . > /dev/null 2>&1
-    git commit -m "release $RELEASE_VERSION" > /dev/null 2>&1
-    git tag "$RELEASE_VERSION" > /dev/null 2>&1
-    git push > /dev/null 2>&1
-    git push --tags > /dev/null 2>&1
+    apply "release $RELEASE_VERSION" $RELEASE_VERSION
 
     setVersion $NEXT_RELEASE_BRANCH_VERSION $DOCKER_BUILD_STEP_NAMES
     unsetVersion $DOCKER_PUSH_STEP_NAMES
 
-    git add . > /dev/null 2>&1
-    git commit -m "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]" > /dev/null 2>&1
-    git push > /dev/null 2>&1
-    echo "tagged $RELEASE_VERSION"
+    apply "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]"
+
     exit 0
     ;;
 
   rc)
     setVersion $VERSION $DOCKER_BUILD_STEP_NAMES $DOCKER_PUSH_STEP_NAMES
 
-    git add . > /dev/null 2>&1
-    git commit -m "release $VERSION" > /dev/null 2>&1
-    git tag "$VERSION" > /dev/null 2>&1
-    git push > /dev/null 2>&1
-    git push --tags > /dev/null 2>&1
-
-    echo "tagged $VERSION"
+    apply "release $VERSION" $VERSION
 
     NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.$PATCH-rc.$((PRE+1))"
 
     setVersion $NEXT_RELEASE_BRANCH_VERSION $DOCKER_BUILD_STEP_NAMES
     unsetVersion $DOCKER_PUSH_STEP_NAMES
 
-    git add . > /dev/null 2>&1
-    git commit -m "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]" > /dev/null 2>&1
-    git push > /dev/null 2>&1
+    apply "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]"
 
     exit 0
     ;;
