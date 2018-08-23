@@ -60,21 +60,21 @@ if ! git diff --exit-code --no-patch > /dev/null 2>&1; then
   echo 'ERROR: you have modified tracked files; only release from clean directories!' >&2
   exit 3
 else
-  echo 'INFO : no modified tracked files'
+  echo 'INFO: no modified tracked files'
 fi
 
 if ! git diff --cached --exit-code --no-patch > /dev/null 2>&1; then
   echo 'ERROR: you have cached modified tracked files; only release from clean directories!' >&2
   exit 3
 else
-  echo 'INFO : no cached modified tracked files'
+  echo 'INFO: no cached modified tracked files'
 fi
 
 if [ -n "$(git status -s)" ]; then
   echo 'ERROR: You have unignored untracked files; only release from clean directories!' >&2
   exit 3
 else
-  echo 'INFO : no unignored untracked files'
+  echo 'INFO: no unignored untracked files'
 fi
 
 BRANCH="$(git status | head -n 1 | awk '{ print $3 }')"
@@ -118,7 +118,7 @@ echo "INFO: ok to proceed with $RELEASE_LEVEL from branch $BRANCH"
 
 CODEFRESH_YML=${CODEFRESH_YML:-codefresh.yml}
 
-echo "INFO: determining build step names from $CODEFRESH_YML:"
+echo "INFO: determining build step names from $CODEFRESH_YML"
 
 if [ -n "$DOCKER_BUILD_STEP_NAMES" ]; then
   DOCKER_BUILD_STEP_NAMES="$(echo -n "$DOCKER_BUILD_STEP_NAMES" | tr "," " ")" # replace commas with spaces
