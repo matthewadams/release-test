@@ -125,7 +125,7 @@ else # this is a release branch
   esac
 fi
 
-if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a new release branch or a prerelease
+if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a new release branch, or a pre
   if [[ ! "$VERSION" =~ ^([0-9]{1,})\.([0-9]{1,})\.0\-pre\.([0-9]{1,})$ ]]; then
     echo "ERROR: The version does not match the format of major.minor.0-pre.n required in the $MASTER branch." >&2
     exit 8
@@ -206,33 +206,38 @@ if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a 
       ;;
 
   pre)
-      git tag "v$VERSION" > /dev/null 2>&1
+      for step in $DOCKER_BUILD_STEP_NAMES $DOCKER_PUSH_STEP_NAMES; do
+        CODEFRESH_YML_CONTENT="$(cat "$CODEFRESH_YML")"
+        echo -n "$CODEFRESH_YML_CONTENT" \
+          | docker run --rm -i matthewadams12/ymlx "it => { it.steps['$step'].tag = '$VERSION'; return it; }" \
+          > "$CODEFRESH_YML"
+      done
+      git add . > /dev/null 2>&1
+      git commit -m "release $VERSION" > /dev/null 2>&1
+      git tag "$VERSION" > /dev/null 2>&1
+      git push > /dev/null 2>&1
+      git push --tags > /dev/null 2>&1
+
       RELEASED_VERSION="$VERSION"
       NEXT_VERSION=$MAJOR.$MINOR.$PATCH-pre.$((PRE+1))
+      echo "tagged $RELEASED_VERSION for release"
 
-      for step in $DOCKER_BUILD_STEP_NAMES $DOCKER_PUSH_STEP_NAMES; do
+      for step in $DOCKER_BUILD_STEP_NAMES; do
         CODEFRESH_YML_CONTENT="$(cat "$CODEFRESH_YML")"
         echo -n "$CODEFRESH_YML_CONTENT" \
           | docker run --rm -i matthewadams12/ymlx "it => { it.steps['$step'].tag = '$NEXT_VERSION'; return it; }" \
           > "$CODEFRESH_YML"
       done
-
-      git add . > /dev/null 2>&1
-      git commit -m "bump to $NEXT_VERSION [skip ci]" > /dev/null 2>&1
-      git push > /dev/null 2>&1
-      git push --tags > /dev/null 2>&1
-
       for step in $DOCKER_PUSH_STEP_NAMES; do
         CODEFRESH_YML_CONTENT="$(cat "$CODEFRESH_YML")"
         echo -n "$CODEFRESH_YML_CONTENT" \
           | docker run --rm -i matthewadams12/ymlx "it => { delete it.steps['$step'].tag; return it; }" \
           > "$CODEFRESH_YML"
       done
-      git add . > /dev/null 2>&1
-      git commit -m "delete tag attribute from push steps [skip ci]" > /dev/null 2>&1
-      git push > /dev/null 2>&1
 
-      echo "tagged $RELEASED_VERSION for release"
+      git add . > /dev/null 2>&1
+      git commit -m "bump to $NEXT_VERSION [skip ci]" > /dev/null 2>&1
+      git push > /dev/null 2>&1
 
       exit 0
       ;;
@@ -286,7 +291,7 @@ case "$RELEASE_LEVEL" in
 
     git add . > /dev/null 2>&1
     git commit -m "release $RELEASE_VERSION" > /dev/null 2>&1
-    git tag "v$RELEASE_VERSION" > /dev/null 2>&1
+    git tag "$RELEASE_VERSION" > /dev/null 2>&1
     git push > /dev/null 2>&1
     git push --tags > /dev/null 2>&1
 
@@ -311,7 +316,19 @@ case "$RELEASE_LEVEL" in
     ;;
 
   rc)
-    git tag "v$VERSION" > /dev/null 2>&1
+    for step in $DOCKER_BUILD_STEP_NAMES $DOCKER_PUSH_STEP_NAMES; do
+      CODEFRESH_YML_CONTENT="$(cat "$CODEFRESH_YML")"
+      echo -n "$CODEFRESH_YML_CONTENT" \
+        | docker run --rm -i matthewadams12/ymlx "it => { it.steps['$step'].tag = '$VERSION'; return it; }" \
+        > "$CODEFRESH_YML"
+    done
+    git add . > /dev/null 2>&1
+    git commit -m "release $VERSION" > /dev/null 2>&1
+    git tag "$VERSION" > /dev/null 2>&1
+    git push > /dev/null 2>&1
+    git push --tags > /dev/null 2>&1
+
+    echo "tagged $VERSION"
 
     NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.$PATCH-rc.$((PRE+1))"
 
@@ -321,23 +338,17 @@ case "$RELEASE_LEVEL" in
         | docker run --rm -i matthewadams12/ymlx "it => { it.steps['$step'].tag = '$NEXT_RELEASE_BRANCH_VERSION'; return it; }" \
         > "$CODEFRESH_YML"
     done
-
-    git add . > /dev/null 2>&1
-    git commit -m "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]" > /dev/null 2>&1
-    git push > /dev/null 2>&1
-    git push --tags > /dev/null 2>&1
-
     for step in $DOCKER_PUSH_STEP_NAMES; do
       CODEFRESH_YML_CONTENT="$(cat "$CODEFRESH_YML")"
       echo -n "$CODEFRESH_YML_CONTENT" \
         | docker run --rm -i matthewadams12/ymlx "it => { delete it.steps['$step'].tag; return it; }" \
         > "$CODEFRESH_YML"
     done
+
     git add . > /dev/null 2>&1
-    git commit -m "delete tag attribute from push steps [skip ci]" > /dev/null 2>&1
+    git commit -m "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]" > /dev/null 2>&1
     git push > /dev/null 2>&1
 
-    echo "tagged v$VERSION"
     exit 0
     ;;
 esac
