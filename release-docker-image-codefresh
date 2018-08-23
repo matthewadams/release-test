@@ -52,7 +52,7 @@ case "$RELEASE_LEVEL" in
     ;;
 esac
 
-echo "checking required preconditions"
+echo "INFO : checking required preconditions"
 
 git pull > /dev/null 2>&1
 
@@ -60,21 +60,21 @@ if ! git diff --exit-code --no-patch > /dev/null 2>&1; then
   echo 'ERROR: you have modified tracked files; only release from clean directories!' >&2
   exit 3
 else
-  echo 'INFO: no modified tracked files'
+  echo 'INFO : no modified tracked files'
 fi
 
 if ! git diff --cached --exit-code --no-patch > /dev/null 2>&1; then
   echo 'ERROR: you have cached modified tracked files; only release from clean directories!' >&2
   exit 3
 else
-  echo 'INFO: no cached modified tracked files'
+  echo 'INFO : no cached modified tracked files'
 fi
 
 if [ -n "$(git status -s)" ]; then
   echo 'ERROR: You have unignored untracked files; only release from clean directories!' >&2
   exit 3
 else
-  echo 'INFO: no unignored untracked files'
+  echo 'INFO : no unignored untracked files'
 fi
 
 BRANCH="$(git status | head -n 1 | awk '{ print $3 }')"
@@ -82,14 +82,14 @@ if [[ ! "$BRANCH" =~ ^(master|v[0-9]{1,}\.[0-9]{1,})$ ]]; then # it is not a mas
   echo 'ERROR: you can only release from the master branch or release branches (vmajor.minor)!' >&2
   exit 3
 else
-  echo "INFO: on branch $BRANCH, from which releases are allowed"
+  echo "INFO : on branch $BRANCH, from which releases are allowed"
 fi
 
 if ! git diff --exit-code -no-patch $BRANCH $ORIGIN/$BRANCH > /dev/null 2>&1; then
   echo "ERROR: Local branch $BRANCH differs from remote branch $ORIGIN/$BRANCH" >&2
   exit 3
 else
-  echo "INFO: no differences between local & remote branch $BRANCH"
+  echo "INFO : no differences between local & remote branch $BRANCH"
 fi
 
 if [ "$BRANCH" == "$MASTER" ]; then
@@ -114,11 +114,11 @@ else # this is a release branch
   esac
 fi
 
-echo "INFO: ok to proceed with $RELEASE_LEVEL from branch $BRANCH"
+echo "INFO : ok to proceed with $RELEASE_LEVEL from branch $BRANCH"
 
 CODEFRESH_YML=${CODEFRESH_YML:-codefresh.yml}
 
-echo "INFO: determining build step names from $CODEFRESH_YML"
+echo "INFO : determining build step names from $CODEFRESH_YML"
 
 if [ -n "$DOCKER_BUILD_STEP_NAMES" ]; then
   DOCKER_BUILD_STEP_NAMES="$(echo -n "$DOCKER_BUILD_STEP_NAMES" | tr "," " ")" # replace commas with spaces
@@ -131,7 +131,7 @@ if [ -z "$FIRST_DOCKER_BUILD_STEP_NAME" ]; then
   exit 13
 fi
 
-echo "INFO: determining push step names from $CODEFRESH_YML"
+echo "INFO : determining push step names from $CODEFRESH_YML"
 
 if [ -n "$DOCKER_PUSH_STEP_NAMES" ]; then
   DOCKER_PUSH_STEP_NAMES="$(echo -n "$DOCKER_PUSH_STEP_NAMES" | tr "," " ")" # replace commas with spaces
@@ -139,7 +139,7 @@ else
   DOCKER_PUSH_STEP_NAMES="$(cat "$CODEFRESH_YML" | docker run --rm -i matthewadams12/ymlx 'Object.keys(this.steps).filter(it => this.steps[`${it}`].type === "push").join(" ")')"
 fi
 
-echo "INFO: determining current version from $CODEFRESH_YML..."
+echo "INFO : determining current version from $CODEFRESH_YML..."
 
 VERSION="$(cat "$CODEFRESH_YML" | docker run --rm -i matthewadams12/ymlx "this.steps['$FIRST_DOCKER_BUILD_STEP_NAME'].tag")"
 if [[ ! "$VERSION" =~ \-(pre|rc)\.[0-9]{1,}$ ]]; then
@@ -147,7 +147,7 @@ if [[ ! "$VERSION" =~ \-(pre|rc)\.[0-9]{1,}$ ]]; then
   exit 3
 fi
 
-echo "INFO: current version is $VERSION"
+echo "INFO : current version is $VERSION"
 
 setVersion() {
   V=$1
@@ -159,7 +159,7 @@ setVersion() {
       | docker run --rm -i matthewadams12/ymlx "it => { it.steps['$step'].tag = '$V'; return it; }" \
       > "$CODEFRESH_YML"
   done
-  echo "set 'tag' attribute in $CODEFRESH_YML steps $@ to $V"
+  echo "INFO : set 'tag' attribute in $CODEFRESH_YML steps $@ to $V"
 }
 unsetVersion() {
   STEP_NAMES="$@"
@@ -169,15 +169,15 @@ unsetVersion() {
       | docker run --rm -i matthewadams12/ymlx "it => { delete it.steps['$step'].tag; return it; }" \
       > "$CODEFRESH_YML"
   done
-  echo "removed 'tag' attribute in $CODEFRESH_YML steps $@"
+  echo "INFO : removed 'tag' attribute in $CODEFRESH_YML steps $@"
 }
 
 apply() {
   git add . > /dev/null 2>&1
   git commit -m "$1" > /dev/null 2>&1
-  echo "committed changes with message: $1"
+  echo "INFO : committed changes with message: $1"
 
-  MSG="pushed commits"
+  MSG="INFO : pushed commits"
 
   if [ -n "$2" ]; then
     git tag "$2" > /dev/null 2>&1
@@ -194,7 +194,7 @@ if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a 
     echo "ERROR: the version does not match the format of major.minor.0-pre.n required in the $MASTER branch." >&2
     exit 8
   else
-    echo "INFO: version $VERSION matches expected format for branch $BRANCH"
+    echo "INFO : version $VERSION matches expected format for branch $BRANCH"
   fi
 
   # create release branch
@@ -271,7 +271,7 @@ if [[ ! "$VERSION" =~ ^([0-9]{1,})\.([0-9]{1,})\.([0-9]{1,})\-rc\.([0-9]{1,})$ ]
   echo "ERROR: the version does not match the format of major.minor.patch-rc.n required in the release branch." >&2
   exit 8
 else
-    echo "INFO: version $VERSION matches expected format for branch $BRANCH"
+    echo "INFO : version $VERSION matches expected format for branch $BRANCH"
 fi
 MAJOR=${BASH_REMATCH[1]}
 MINOR=${BASH_REMATCH[2]}
@@ -288,21 +288,21 @@ case "$RELEASE_LEVEL" in
       echo "ERROR: this branch is not prepared for a major release because the minor version is $MINOR, not 0." >&2
       exit 10
     else
-      echo "INFO: branch $BRANCH is prepared for a major release"
+      echo "INFO : branch $BRANCH is prepared for a major release"
       NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.1-rc.0"
     fi
     if [ $RELEASE_LEVEL == minor ] && [ $PATCH != 0 ]; then
       echo "ERROR: a minor release has already been performed in this release branch; only patch releases are allowed here now." >&2
       exit 11
     else
-      echo "INFO: no minor releases have been performed yet in branch $BRANCH"
+      echo "INFO : no minor releases have been performed yet in branch $BRANCH"
       NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.1-rc.0"
     fi
     if [ $RELEASE_LEVEL == patch ] && [ $PATCH == 0 ]; then
       echo "ERROR: you must release a minor release before releasing a patch in this release branch." >&2
       exit 12
     else
-      echo "INFO: no minor releases have occurred yet from branch $BRANCH"
+      echo "INFO : no minor releases have occurred yet from branch $BRANCH"
       NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.$((PATCH+1))-rc.0"
     fi
 
