@@ -290,23 +290,22 @@ case "$RELEASE_LEVEL" in
       echo "ERROR: this branch is not prepared for a major release because the minor version is $MINOR, not 0." >&2
       exit 10
     else
-      echo "INFO: major release ok in branch $BRANCH"
       NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.1-rc.0"
     fi
     if [ $RELEASE_LEVEL == minor ] && [ $PATCH != 0 ]; then
       echo "ERROR: a minor release has already been performed in this release branch; only patch releases are allowed here now." >&2
       exit 11
     else
-      echo "INFO: minor release ok in branch $BRANCH"
       NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.1-rc.0"
     fi
     if [ $RELEASE_LEVEL == patch ] && [ $PATCH == 0 ]; then
       echo "ERROR: you must release a minor release before releasing a patch in this release branch." >&2
       exit 12
     else
-      echo "INFO: patch release ok in branch $BRANCH"
       NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.$((PATCH+1))-rc.0"
     fi
+
+    echo "INFO: $RELEASE_LEVEL ok in branch $BRANCH"
 
     RELEASE_VERSION="$MAJOR.$MINOR.$PATCH"
 
