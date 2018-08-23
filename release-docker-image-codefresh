@@ -153,14 +153,15 @@ apply() {
   git commit -m "$1" > /dev/null 2>&1
   echo "committed changes with message: $1"
 
+  MSG="pushed commits"
+
   if [ -n "$2" ]; then
     git tag "$2" > /dev/null 2>&1
     echo "tagged $2"
-    MSG=" & tags"
+    MSG="$MSG & tags"
   fi
 
   git push --follow-tags > /dev/null 2>&1
-  MSG="pushed commits$MSG"
   echo "$MSG"
 }
 
