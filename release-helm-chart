@@ -85,7 +85,7 @@ setVersion() {
   echo -n "$CHART_CONTENT" \
     | docker run --rm -i matthewadams12/ymlx "it => { it.version = '$V'; return it; }" \
     > $CHART_FILE
-  echo "INFO: set 'version' attribute in $CHART_file to $V"
+  echo "INFO: set 'version' attribute in $CHART_FILE to $V"
 }
 
 if [ -n "$TEST" ]; then ECHO=echo; fi
