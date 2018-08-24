@@ -11,11 +11,8 @@
 usage() {
     cat<<EOF
 usage:
- if on master branch: release pre|rc <chart>
-if on release branch: release major|minor|patch|pre <chart>
-
-where:
-  <chart> is the name of the chart
+if on master  branch: release pre|rc
+if on release branch: release major|minor|patch|pre
 
 optional supported environment variables:
 
@@ -151,6 +148,7 @@ fi
 
 echo "INFO: current version is $VERSION"
 
+# usage: setVersion version stepName [stepNames...]
 setVersion() {
   V=$1
   shift
@@ -163,6 +161,8 @@ setVersion() {
   done
   echo "INFO: set 'tag' attribute in $CODEFRESH_YML steps $@ to $V"
 }
+
+# usage: unsetVersion stepName [stepNames...]
 unsetVersion() {
   STEP_NAMES="$@"
   for step in $STEP_NAMES; do
@@ -174,6 +174,7 @@ unsetVersion() {
   echo "INFO: removed 'tag' attribute in $CODEFRESH_YML steps $@"
 }
 
+# usage: apply message [tagName [remote branch]]
 apply() {
   git add . > /dev/null 2>&1
   git commit -m "$1" > /dev/null 2>&1
@@ -187,7 +188,13 @@ apply() {
     MSG="$MSG & tags"
   fi
 
-  git push --follow-tags > /dev/null 2>&1
+  SET_UPSTREAM_ARGS=
+  if [ -n "$3" ] && [ -n "$4" ]; then
+    SET_UPSTREAM_ARGS="-u '$3' '$4'"
+    MSG="$MSG & set tracked upstream to $3/$4"
+  fi
+
+  git push $SET_UPSTREAM_ARGS --follow-tags > /dev/null 2>&1
   echo "$MSG"
 }
 
@@ -214,11 +221,7 @@ if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a 
 
       setVersion $NEW_RELEASE_BRANCH_VERSION $DOCKER_BUILD_STEP_NAMES $DOCKER_PUSH_STEP_NAMES
 
-      git add . > /dev/null 2>&1
-      git commit -m "release $NEW_RELEASE_BRANCH_VERSION" > /dev/null 2>&1
-      git tag $NEW_RELEASE_BRANCH_VERSION > /dev/null 2>&1
-      git push -u $ORIGIN $NEW_RELEASE_BRANCH > /dev/null 2>&1
-      git push --tags > /dev/null 2>&1
+      apply "release $NEW_RELEASE_BRANCH_VERSION" $NEW_RELEASE_BRANCH_VERSION $ORIGIN $NEW_RELEASE_BRANCH
       echo "INFO: created release branch $NEW_RELEASE_BRANCH and tagged $NEW_RELEASE_BRANCH_VERSION for release"
 
       # return to master branch
