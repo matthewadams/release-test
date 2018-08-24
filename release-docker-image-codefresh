@@ -175,7 +175,7 @@ unsetVersion() {
 }
 
 # usage: apply message [tag [remote branch]]
-apply() {
+applyChanges() {
   git add . > /dev/null 2>&1
   git commit -m "$1" > /dev/null 2>&1
   echo "INFO: committed changes with message: $1"
@@ -227,7 +227,7 @@ if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a 
 
       setVersion $NEW_RELEASE_BRANCH_VERSION $DOCKER_BUILD_STEP_NAMES $DOCKER_PUSH_STEP_NAMES
 
-      apply "release $NEW_RELEASE_BRANCH_VERSION" $NEW_RELEASE_BRANCH_VERSION $ORIGIN $NEW_RELEASE_BRANCH
+      applyChanges "release $NEW_RELEASE_BRANCH_VERSION" $NEW_RELEASE_BRANCH_VERSION $ORIGIN $NEW_RELEASE_BRANCH
       echo "INFO: created release branch $NEW_RELEASE_BRANCH and tagged $NEW_RELEASE_BRANCH_VERSION for release"
 
       # return to master branch
@@ -243,7 +243,7 @@ if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a 
       setVersion $NEXT_VERSION $DOCKER_BUILD_STEP_NAMES
       unsetVersion $DOCKER_PUSH_STEP_NAMES
 
-      apply "bump to $NEXT_VERSION [skip ci]"
+      applyChanges "bump to $NEXT_VERSION [skip ci]"
 
       # return to release branch & prepare for next prerelease
       git checkout $NEW_RELEASE_BRANCH > /dev/null 2>&1
@@ -254,7 +254,7 @@ if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a 
       setVersion $NEXT_RELEASE_BRANCH_VERSION $DOCKER_BUILD_STEP_NAMES
       unsetVersion $DOCKER_PUSH_STEP_NAMES
 
-      apply "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]"
+      applyChanges "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]"
 
       exit 0
       ;;
@@ -262,14 +262,14 @@ if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a 
   pre)
       setVersion $VERSION $DOCKER_BUILD_STEP_NAMES $DOCKER_PUSH_STEP_NAMES
 
-      apply "release $VERSION" $VERSION
+      applyChanges "release $VERSION" $VERSION
 
       NEXT_VERSION=$MAJOR.$MINOR.$PATCH-pre.$((PRE+1))
 
       setVersion $NEXT_VERSION $DOCKER_BUILD_STEP_NAMES
       unsetVersion $DOCKER_PUSH_STEP_NAMES
 
-      apply "bump to $NEXT_VERSION [skip ci]"
+      applyChanges "bump to $NEXT_VERSION [skip ci]"
 
       exit 0
       ;;
@@ -320,12 +320,12 @@ case "$RELEASE_LEVEL" in
 
     setVersion $RELEASE_VERSION $DOCKER_BUILD_STEP_NAMES $DOCKER_PUSH_STEP_NAMES
 
-    apply "release $RELEASE_VERSION" $RELEASE_VERSION
+    applyChanges "release $RELEASE_VERSION" $RELEASE_VERSION
 
     setVersion $NEXT_RELEASE_BRANCH_VERSION $DOCKER_BUILD_STEP_NAMES
     unsetVersion $DOCKER_PUSH_STEP_NAMES
 
-    apply "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]"
+    applyChanges "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]"
 
     exit 0
     ;;
@@ -333,14 +333,14 @@ case "$RELEASE_LEVEL" in
   rc)
     setVersion $VERSION $DOCKER_BUILD_STEP_NAMES $DOCKER_PUSH_STEP_NAMES
 
-    apply "release $VERSION" $VERSION
+    applyChanges "release $VERSION" $VERSION
 
     NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.$PATCH-rc.$((PRE+1))"
 
     setVersion $NEXT_RELEASE_BRANCH_VERSION $DOCKER_BUILD_STEP_NAMES
     unsetVersion $DOCKER_PUSH_STEP_NAMES
 
-    apply "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]"
+    applyChanges "bump to $NEXT_RELEASE_BRANCH_VERSION [skip ci]"
 
     exit 0
     ;;
