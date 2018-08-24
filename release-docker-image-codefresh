@@ -148,7 +148,7 @@ fi
 
 echo "INFO: current version is $VERSION"
 
-# usage: setVersion version stepName [stepNames...]
+# usage: setVersion version step [steps...]
 setVersion() {
   V=$1
   shift
@@ -162,7 +162,7 @@ setVersion() {
   echo "INFO: set 'tag' attribute in $CODEFRESH_YML steps $@ to $V"
 }
 
-# usage: unsetVersion stepName [stepNames...]
+# usage: unsetVersion step [steps...]
 unsetVersion() {
   STEP_NAMES="$@"
   for step in $STEP_NAMES; do
@@ -174,7 +174,7 @@ unsetVersion() {
   echo "INFO: removed 'tag' attribute in $CODEFRESH_YML steps $@"
 }
 
-# usage: apply message [tagName [remote branch]]
+# usage: apply message [tag [remote branch]]
 apply() {
   git add . > /dev/null 2>&1
   git commit -m "$1" > /dev/null 2>&1
@@ -194,8 +194,13 @@ apply() {
     MSG="$MSG & set tracked upstream to $3/$4"
   fi
 
-  echo "git push $SET_UPSTREAM_ARGS --follow-tags"
-  git push $SET_UPSTREAM_ARGS --follow-tags > /dev/null 2>&1
+  if [ -n "$SET_UPSTREAM_ARGS" ]; then
+    git push $SET_UPSTREAM_ARGS > /dev/null 2>&1
+    git push --tags
+  else
+    git push --follow-tags > /dev/null 2>&1
+  fi
+
   echo "$MSG"
 }
 
