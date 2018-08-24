@@ -190,13 +190,13 @@ apply() {
 
   SET_UPSTREAM_ARGS=
   if [ -n "$3" ] && [ -n "$4" ]; then
-    SET_UPSTREAM_ARGS="-u '$3' '$4'"
+    SET_UPSTREAM_ARGS="-u $3 $4"
     MSG="$MSG & set tracked upstream to $3/$4"
   fi
 
   if [ -n "$SET_UPSTREAM_ARGS" ]; then
     git push $SET_UPSTREAM_ARGS > /dev/null 2>&1
-    git push --tags
+    git push --tags > /dev/null 2>&1
   else
     git push --follow-tags > /dev/null 2>&1
   fi
