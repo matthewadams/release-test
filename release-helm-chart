@@ -88,8 +88,7 @@ setVersion() {
   echo "INFO: set 'version' attribute in $CHART_FILE to $V"
 }
 
-if [ -n "$TEST" ]; then ECHO=echo; fi
-if [ -n "$DBG" ]; then set -x; fi
+if [ -n "$RELEASE_DBG" ]; then set -x; fi
 
 ORIGIN=${ORIGIN:-origin}
 MASTER=${MASTER:-master}

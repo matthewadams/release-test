@@ -25,8 +25,7 @@ DOCKER_BUILD_STEP_NAMES   comma-separated list of build step names, defaults to 
 EOF
 }
 
-if [ -n "$TEST" ]; then ECHO=echo; fi
-if [ -n "$DBG" ]; then set -x; fi
+if [ -n "$RELEASE_DBG" ]; then set -x; fi
 
 ORIGIN=${ORIGIN:-origin}
 MASTER=${MASTER:-master}
