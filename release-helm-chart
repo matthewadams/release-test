@@ -8,6 +8,10 @@
 
 # TODO: port this from bash to plain ol' sh (regex matching needs to be ported)
 
+if [ -n "$RELEASE_DEBUG" ]; then
+  set -x
+fi
+
 usage() {
     cat<<EOF
 usage:
@@ -88,23 +92,21 @@ setVersion() {
   echo "INFO: set 'version' attribute in $CHART_FILE to $V"
 }
 
-if [ -n "$RELEASE_DBG" ]; then set -x; fi
-
 ORIGIN=${ORIGIN:-origin}
 MASTER=${MASTER:-master}
 
 echo "INFO: checking required preconditions"
 
-git pull > /dev/null 2>&1
+git pull
 
-if ! git diff --exit-code --no-patch > /dev/null 2>&1; then
+if ! git diff --exit-code --no-patch; then
   echo 'ERROR: you have modified tracked files; only release from clean directories!' >&2
   exit 3
 else
   echo 'INFO: no modified tracked files'
 fi
 
-if ! git diff --cached --exit-code --no-patch > /dev/null 2>&1; then
+if ! git diff --cached --exit-code --no-patch; then
   echo 'ERROR: you have cached modified tracked files; only release from clean directories!' >&2
   exit 3
 else
@@ -126,7 +128,7 @@ else
   echo "INFO: on branch $BRANCH, from which releases are allowed"
 fi
 
-if ! git diff --exit-code -no-patch $BRANCH $ORIGIN/$BRANCH > /dev/null 2>&1; then
+if ! git diff --exit-code -no-patch $BRANCH $ORIGIN/$BRANCH; then
   echo "ERROR: Local branch $BRANCH differs from remote branch $ORIGIN/$BRANCH" >&2
   exit 3
 else
@@ -169,14 +171,14 @@ echo "INFO: current version is $VERSION"
 
 # usage: apply message [tag [remote branch]]
 applyChanges() {
-  git add . > /dev/null 2>&1
-  git commit -m "$1" > /dev/null 2>&1
+  git add .
+  git commit -m "$1"
   echo "INFO: committed changes with message: $1"
 
   MSG="INFO: pushed commits"
 
   if [ -n "$2" ]; then
-    git tag "$2" > /dev/null 2>&1
+    git tag "$2"
     echo "INFO: tagged $2"
     MSG="$MSG & tags"
   fi
@@ -187,8 +189,8 @@ applyChanges() {
     MSG="$MSG & set tracked upstream to $3/$4"
   fi
 
-  git push $SET_UPSTREAM_ARGS > /dev/null 2>&1
-  git push --tags > /dev/null 2>&1
+  git push $SET_UPSTREAM_ARGS
+  git push --tags
 
   echo "$MSG"
 }
@@ -210,7 +212,7 @@ if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a 
   case "$RELEASE_LEVEL" in
   rc) # then it's time to create a new release branch
       NEW_RELEASE_BRANCH="v$MAJOR.$MINOR"
-      git checkout -b $NEW_RELEASE_BRANCH > /dev/null 2>&1
+      git checkout -b $NEW_RELEASE_BRANCH
 
       NEW_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.0-rc.0"
 
@@ -220,10 +222,10 @@ if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a 
       echo "INFO: created release branch $NEW_RELEASE_BRANCH and tagged $NEW_RELEASE_BRANCH_VERSION for release"
 
       # return to master branch
-      git checkout $MASTER > /dev/null 2>&1
+      git checkout $MASTER
       echo "INFO: checked out $MASTER"
 
-      git cherry-pick $NEW_RELEASE_BRANCH > /dev/null 2>&1 # cherry pick from release branch to get release candidate commit in master
+      git cherry-pick $NEW_RELEASE_BRANCH # cherry pick from release branch to get release candidate commit in master
       echo "INFO: cherry-picked $NEW_RELEASE_BRANCH rc commit into $MASTER"
 
       # advance master version
@@ -234,7 +236,7 @@ if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a 
       applyChanges "bump to $NEXT_VERSION [skip ci]"
 
       # return to release branch & prepare for next prerelease
-      git checkout $NEW_RELEASE_BRANCH > /dev/null 2>&1
+      git checkout $NEW_RELEASE_BRANCH
       echo "INFO: checked out $NEW_RELEASE_BRANCH"
 
       NEXT_RELEASE_BRANCH_VERSION="$MAJOR.$MINOR.0-rc.1"
