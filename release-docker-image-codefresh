@@ -193,12 +193,8 @@ applyChanges() {
     MSG="$MSG & set tracked upstream to $3/$4"
   fi
 
-  if [ -n "$SET_UPSTREAM_ARGS" ]; then
-    git push $SET_UPSTREAM_ARGS > /dev/null 2>&1
-    git push --tags > /dev/null 2>&1
-  else
-    git push --follow-tags > /dev/null 2>&1
-  fi
+  git push $SET_UPSTREAM_ARGS > /dev/null 2>&1
+  git push --tags > /dev/null 2>&1
 
   echo "$MSG"
 }
