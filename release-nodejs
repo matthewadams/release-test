@@ -11,13 +11,8 @@
 usage() {
     cat<<EOF
 usage:
-if on master  branch: release pre|rc [chart]
-if on release branch: release major|minor|patch|pre [chart]
-
-where:
-  chart is the name of the chart and its directory, unless it is ".."
-    * if ".." is given, chart name is assumed to be the name of the directory containing the current working directory, otherwise
-    * the default value is the only directory name in this directory that does not start with ".", unless there are multiple
+if on master  branch: release pre|rc
+if on release branch: release major|minor|patch|pre
 
 optional supported environment variables:
 
@@ -25,8 +20,7 @@ variable                  description
 --------                  -----------
 ORIGIN                    name of git remote, default 'origin'
 MASTER                    name of master branch, default 'master'
-CHART_DIR                 name of chart directory, default derived from given chart name
-CHART_FILE                name of chart file, default derived from chart directory
+PACKAGE_JSON              name of package.json file
 EOF
 }
 
