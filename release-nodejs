@@ -8,9 +8,7 @@
 
 # TODO: port this from bash to plain ol' sh (regex matching needs to be ported)
 
-set -x
-
-if [ -n "$RELEASE_DBG" ]; then
+if [ -n "$RELEASE_DEBUG" ]; then
   set -x
   REDIRECT='&1'
 else
