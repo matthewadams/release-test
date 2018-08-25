@@ -14,7 +14,7 @@ if [ -n "$RELEASE_DBG" ]; then
   set -x
   REDIRECT='&1'
 else
-  REDIRECT='/dev/null 2>&1'
+  REDIRECT='/dev/null'
 fi
 
 usage() {
