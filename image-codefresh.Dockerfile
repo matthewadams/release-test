@@ -9,13 +9,12 @@ RUN apk update && \
       nodejs \
       npm
 
-RUN npm i -g npm
 RUN npm i -g ymlx
 
 RUN mkdir /scripts
 COPY ./match /scripts/match
 RUN chmod +x /scripts/match
-RUN ln -s /usr/local/bin/match /scripts/match
+RUN ln -s /scripts/match /usr/local/bin/match
 
 COPY ./release-image-codefresh /scripts/release-image-codefresh
 RUN chmod +x /scripts/release-image-codefresh

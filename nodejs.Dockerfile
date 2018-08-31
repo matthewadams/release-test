@@ -9,17 +9,20 @@ RUN apk update && \
       nodejs \
       npm
 
-RUN npm i -g npm
 RUN npm i -g ymlx
 
 RUN mkdir /scripts
+COPY ./match /scripts/match
+RUN chmod +x /scripts/match
+RUN ln -s /scripts/match /usr/local/bin/match
+
 COPY ./release-nodejs /scripts/release-nodejs
 RUN chmod +x /scripts/release-nodejs
+RUN ln -s /scripts/release-nodejs /usr/local/bin/release-nodejs
 
 RUN mkdir /gitrepo
 VOLUME [ "/gitrepo" ]
-
 WORKDIR /gitrepo
 
-ENTRYPOINT [ "/scripts/release-nodejs" ]
+ENTRYPOINT [ "release-nodejs" ]
 CMD [ "--help" ]
