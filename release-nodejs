@@ -4,9 +4,7 @@
 #
 # Requirements:
 # git
-# docker
-
-# TODO: port this from bash to plain ol' sh (regex matching needs to be ported)
+# docker (unless ymlx & match are available on the path as reported by `which`)
 
 if [ -n "$RELEASE_DEBUG" ]; then
   set -x
@@ -91,8 +89,17 @@ else
   echo 'INFO: no unignored untracked files'
 fi
 
+YMLX=ymlx
+if ! which $YMLX; then
+  YMLX="docker run --rm -i matthewadams12/$YMLX"
+fi
+MATCH=match
+if ! which $MATCH; then
+  MATCH="docker run --rm -i matthewadams12/$MATCH"
+fi
+
 BRANCH="$(git status | head -n 1 | awk '{ print $3 }')"
-if [[ ! "$BRANCH" =~ ^(master|v[0-9]{1,}\.[0-9]{1,})$ ]]; then # it is not a master or a release branch
+if ! $MATCH "$BRANCH" '^(master|v[0-9]{1,}\.[0-9]{1,})$'; then # it is not a master or a release branch
   echo 'ERROR: you can only release from the master branch or release branches (vmajor.minor)!' >&2
   exit 3
 else
@@ -133,7 +140,7 @@ echo "INFO: ok to proceed with $RELEASE_LEVEL from branch $BRANCH"
 echo "INFO: determining current version from $PACKAGE_JSON"
 
 VERSION="$(getVersion)"
-if [[ ! "$VERSION" =~ \-(pre|rc)\.[0-9]{1,}$ ]]; then
+if ! $MATCH "$VERSION" '\-(pre|rc)\.[0-9]{1,}$'; then
   echo 'ERROR: repository is in an inconsistent state: version does NOT end in a prerelease suffix!' >&2
   exit 3
 fi
@@ -167,12 +174,15 @@ applyChanges() {
 }
 
 if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a new release branch, or a pre
-  if [[ ! "$VERSION" =~ ^([0-9]{1,})\.([0-9]{1,})\.0\-pre\.([0-9]{1,})$ ]]; then
+  MATCHES="$($MATCH "$VERSION" '^([0-9]{1,})\.([0-9]{1,})\.0\-pre\.([0-9]{1,})$')"
+  if [ -z "$MATCHES" ]; then
     echo "ERROR: the version does not match the format of major.minor.0-pre.n required in the $MASTER branch." >&2
     exit 8
   else
     echo "INFO: version $VERSION matches expected format for branch $BRANCH"
   fi
+
+  IFS=' ' read -r -a BASH_REMATCH <<< "$VERSION $MATCHES"
 
   # create release branch
   MAJOR=${BASH_REMATCH[1]}
@@ -237,12 +247,16 @@ fi
 
 # If we get this far, we are releasing something from a release branch.
 
-if [[ ! "$VERSION" =~ ^([0-9]{1,})\.([0-9]{1,})\.([0-9]{1,})\-rc\.([0-9]{1,})$ ]]; then
+MATCHES="$($MATCH "$VERSION" '^([0-9]{1,})\.([0-9]{1,})\.([0-9]{1,})\-rc\.([0-9]{1,})$')"
+if [ -z "$MATCHES" ]; then
   echo "ERROR: the version does not match the format of major.minor.patch-rc.n required in the release branch." >&2
   exit 8
 else
     echo "INFO: version $VERSION matches expected format for branch $BRANCH"
 fi
+
+IFS=' ' read -r -a BASH_REMATCH <<< "$VERSION $MATCHES"
+
 MAJOR=${BASH_REMATCH[1]}
 MINOR=${BASH_REMATCH[2]}
 PATCH=${BASH_REMATCH[3]}

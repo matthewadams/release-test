@@ -4,9 +4,7 @@
 #
 # Requirements:
 # git
-# docker
-
-# TODO: port this from bash to plain ol' sh (regex matching needs to be ported)
+# docker (unless ymlx & match are available on the path as reported by `which`)
 
 if [ -n "$RELEASE_DEBUG" ]; then
   set -x
@@ -29,9 +27,6 @@ DOCKER_BUILD_STEP_NAMES   comma-separated list of build step names, defaults to 
 EOF
 }
 
-ORIGIN=${ORIGIN:-origin}
-MASTER=${MASTER:-master}
-
 RELEASE_LEVEL="$1"
 case "$RELEASE_LEVEL" in
   major|minor|patch|pre|rc)
@@ -49,6 +44,9 @@ case "$RELEASE_LEVEL" in
     exit 1
     ;;
 esac
+
+ORIGIN=${ORIGIN:-origin}
+MASTER=${MASTER:-master}
 
 echo "INFO: checking required preconditions"
 
@@ -75,8 +73,17 @@ else
   echo 'INFO: no unignored untracked files'
 fi
 
+YMLX=ymlx
+if ! which $YMLX; then
+  YMLX="docker run --rm -i matthewadams12/$YMLX"
+fi
+MATCH=match
+if ! which $MATCH; then
+  MATCH="docker run --rm -i matthewadams12/$MATCH"
+fi
+
 BRANCH="$(git status | head -n 1 | awk '{ print $3 }')"
-if [[ ! "$BRANCH" =~ ^(master|v[0-9]{1,}\.[0-9]{1,})$ ]]; then # it is not a master or a release branch
+if ! $MATCH "$BRANCH" '^(master|v[0-9]{1,}\.[0-9]{1,})$'; then # it is not a master or a release branch
   echo 'ERROR: you can only release from the master branch or release branches (vmajor.minor)!' >&2
   exit 3
 else
@@ -121,7 +128,7 @@ echo "INFO: determining build step names from $CODEFRESH_YML"
 if [ -n "$DOCKER_BUILD_STEP_NAMES" ]; then
   DOCKER_BUILD_STEP_NAMES="$(echo -n "$DOCKER_BUILD_STEP_NAMES" | tr "," " ")" # replace commas with spaces
 else
-  DOCKER_BUILD_STEP_NAMES="$(cat "$CODEFRESH_YML" | docker run --rm -i matthewadams12/ymlx 'Object.keys(this.steps).filter(it => this.steps[`${it}`].type === "build").join(" ")')"
+  DOCKER_BUILD_STEP_NAMES="$(cat "$CODEFRESH_YML" | $YMLX 'Object.keys(this.steps).filter(it => this.steps[`${it}`].type === "build").join(" ")')"
 fi
 FIRST_DOCKER_BUILD_STEP_NAME="$(echo -n "$DOCKER_BUILD_STEP_NAMES" | awk '{print $1}')"
 if [ -z "$FIRST_DOCKER_BUILD_STEP_NAME" ]; then
@@ -135,14 +142,14 @@ echo "INFO: determining push step names from $CODEFRESH_YML"
 if [ -n "$DOCKER_PUSH_STEP_NAMES" ]; then
   DOCKER_PUSH_STEP_NAMES="$(echo -n "$DOCKER_PUSH_STEP_NAMES" | tr "," " ")" # replace commas with spaces
 else
-  DOCKER_PUSH_STEP_NAMES="$(cat "$CODEFRESH_YML" | docker run --rm -i matthewadams12/ymlx 'Object.keys(this.steps).filter(it => this.steps[`${it}`].type === "push").join(" ")')"
+  DOCKER_PUSH_STEP_NAMES="$(cat "$CODEFRESH_YML" | $YMLX 'Object.keys(this.steps).filter(it => this.steps[`${it}`].type === "push").join(" ")')"
 fi
 
 echo "INFO: push step names are $DOCKER_PUSH_STEP_NAMES"
 echo "INFO: determining current version from $CODEFRESH_YML"
 
-VERSION="$(cat "$CODEFRESH_YML" | docker run --rm -i matthewadams12/ymlx "this.steps['$FIRST_DOCKER_BUILD_STEP_NAME'].tag")"
-if [[ ! "$VERSION" =~ \-(pre|rc)\.[0-9]{1,}$ ]]; then
+VERSION="$(cat "$CODEFRESH_YML" | $YMLX "this.steps['$FIRST_DOCKER_BUILD_STEP_NAME'].tag")"
+if ! $MATCH "$VERSION" '\-(pre|rc)\.[0-9]{1,}$'; then
   echo 'ERROR: repository is in an inconsistent state: version does NOT end in a prerelease suffix!' >&2
   exit 3
 fi
@@ -157,7 +164,7 @@ setVersion() {
   for step in $STEP_NAMES; do
     CODEFRESH_YML_CONTENT="$(cat "$CODEFRESH_YML")"
     echo -n "$CODEFRESH_YML_CONTENT" \
-      | docker run --rm -i matthewadams12/ymlx "it => { it.steps['$step'].tag = '$V'; return it; }" \
+      | $YMLX "it => { it.steps['$step'].tag = '$V'; return it; }" \
       > "$CODEFRESH_YML"
   done
   echo "INFO: set 'tag' attribute in $CODEFRESH_YML steps $@ to $V"
@@ -169,7 +176,7 @@ unsetVersion() {
   for step in $STEP_NAMES; do
     CODEFRESH_YML_CONTENT="$(cat "$CODEFRESH_YML")"
     echo -n "$CODEFRESH_YML_CONTENT" \
-      | docker run --rm -i matthewadams12/ymlx "it => { delete it.steps['$step'].tag; return it; }" \
+      | $YMLX "it => { delete it.steps['$step'].tag; return it; }" \
       > "$CODEFRESH_YML"
   done
   echo "INFO: removed 'tag' attribute in $CODEFRESH_YML steps $@"
@@ -202,12 +209,15 @@ applyChanges() {
 }
 
 if [ "$BRANCH" == "$MASTER" ]; then # this will be either an rc, resulting in a new release branch, or a pre
-  if [[ ! "$VERSION" =~ ^([0-9]{1,})\.([0-9]{1,})\.0\-pre\.([0-9]{1,})$ ]]; then
+  MATCHES="$($MATCH "$VERSION" '^([0-9]{1,})\.([0-9]{1,})\.0\-pre\.([0-9]{1,})$')"
+  if [ -z "$MATCHES" ]; then
     echo "ERROR: the version does not match the format of major.minor.0-pre.n required in the $MASTER branch." >&2
     exit 8
   else
     echo "INFO: version $VERSION matches expected format for branch $BRANCH"
   fi
+
+  IFS=' ' read -r -a BASH_REMATCH <<< "$VERSION $MATCHES"
 
   # create release branch
   MAJOR=${BASH_REMATCH[1]}
@@ -275,12 +285,16 @@ fi
 
 # If we get this far, we are releasing something from a release branch.
 
-if [[ ! "$VERSION" =~ ^([0-9]{1,})\.([0-9]{1,})\.([0-9]{1,})\-rc\.([0-9]{1,})$ ]]; then
+MATCHES="$($MATCH "$VERSION" '^([0-9]{1,})\.([0-9]{1,})\.([0-9]{1,})\-rc\.([0-9]{1,})$')"
+if [ -z "$MATCHES" ]; then
   echo "ERROR: the version does not match the format of major.minor.patch-rc.n required in the release branch." >&2
   exit 8
 else
     echo "INFO: version $VERSION matches expected format for branch $BRANCH"
 fi
+
+IFS=' ' read -r -a BASH_REMATCH <<< "$VERSION $MATCHES"
+
 MAJOR=${BASH_REMATCH[1]}
 MINOR=${BASH_REMATCH[2]}
 PATCH=${BASH_REMATCH[3]}
