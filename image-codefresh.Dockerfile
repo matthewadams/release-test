@@ -17,13 +17,13 @@ COPY ./match /scripts/match
 RUN chmod +x /scripts/match
 RUN ln -s /usr/local/bin/match /scripts/match
 
-COPY ./release-docker-image-codefresh /scripts/release-docker-image-codefresh
-RUN chmod +x /scripts/release-docker-image-codefresh
-RUN ln -s /usr/local/bin/release-docker-image-codefresh /scripts/release-docker-image-codefresh
+COPY ./release-image-codefresh /scripts/release-image-codefresh
+RUN chmod +x /scripts/release-image-codefresh
+RUN ln -s /usr/local/bin/release-image-codefresh /scripts/release-image-codefresh
 
 RUN mkdir /gitrepo
 VOLUME [ "/gitrepo" ]
 WORKDIR /gitrepo
 
-ENTRYPOINT [ "release-docker-image-codefresh" ]
+ENTRYPOINT [ "release-image-codefresh" ]
 CMD [ "--help" ]

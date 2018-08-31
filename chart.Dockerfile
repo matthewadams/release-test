@@ -12,13 +12,13 @@ RUN apk update && \
 RUN npm i -g npm
 
 RUN mkdir /scripts
-COPY ./release-helm-chart /scripts/release-helm-chart
-RUN chmod +x /scripts/release-helm-chart
+COPY ./release-chart /scripts/release-chart
+RUN chmod +x /scripts/release-chart
 
 RUN mkdir /gitrepo
 VOLUME [ "/gitrepo" ]
 
 WORKDIR /gitrepo
 
-ENTRYPOINT [ "/scripts/release-helm-chart" ]
+ENTRYPOINT [ "/scripts/release-chart" ]
 CMD [ "--help" ]
