@@ -19,7 +19,7 @@ RUN ln -s /usr/local/bin/match /scripts/match
 
 COPY ./release-image-codefresh /scripts/release-image-codefresh
 RUN chmod +x /scripts/release-image-codefresh
-RUN ln -s /usr/local/bin/release-image-codefresh /scripts/release-image-codefresh
+RUN ln -s /scripts/release-image-codefresh /usr/local/bin/release-image-codefresh
 
 RUN mkdir /gitrepo
 VOLUME [ "/gitrepo" ]
