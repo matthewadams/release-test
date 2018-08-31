@@ -6,23 +6,21 @@ steps:
     image_name: archbox/kafka
     working_directory: ./
     dockerfile: Dockerfile
-    tag: 10.16.0-pre.3
+    tag: 10.16.0-pre.4
   BuildingDockerImage2:
     title: Building Docker Image
     type: build
     image_name: archbox/kafka
     working_directory: ./
     dockerfile: Dockerfile
-    tag: 10.16.0-pre.3
+    tag: 10.16.0-pre.4
   PushingToDockerRegistry:
     title: Pushing to Docker Registry
     type: push
     candidate: '${{BuildingDockerImage}}'
     registry: scispike
-    tag: 10.16.0-pre.3
   PushingToDockerRegistry2:
     title: Pushing to Docker Registry
     type: push
     candidate: '${{BuildingDockerImage2}}'
     registry: scispike
-    tag: 10.16.0-pre.3
